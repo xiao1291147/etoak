@@ -20,6 +20,7 @@ public class GuavaTest {
 
     public static void main(String[] args) {
         joinerExec();
+
     }
 
     private static void joinerExec() {
