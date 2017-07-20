@@ -1,9 +1,11 @@
 package com.etoak.asharp.test;
 
-import com.google.common.base.Joiner;
+import com.google.common.base.*;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -18,9 +20,83 @@ import java.util.Map;
  */
 public class GuavaTest {
 
+
     public static void main(String[] args) {
-        joinerExec();
-        System.out.println("hello");
+//        joinerExec();
+//        splitterExec();
+//        charsetsExec();
+//        StringsExec();
+        charMatcherExec();
+    }
+
+    private static void charMatcherExec() {
+        String tabsAndSpaces = "String  with    spaces    and  tabs";
+        System.out.println(CharMatcher.whitespace().collapseFrom(tabsAndSpaces, ' '));
+
+        tabsAndSpaces = "    String with   spaces    and   tabs";
+        System.out.println(CharMatcher.whitespace().trimAndCollapseFrom(tabsAndSpaces, ' '));
+
+        String lettersAndNumbers = "\"foo989yxbar234\"";
+        System.out.println(CharMatcher.javaDigit().retainFrom(lettersAndNumbers));
+
+        lettersAndNumbers = "foo989 xbar 234";
+        System.out.println(CharMatcher.javaDigit().or(CharMatcher.whitespace()).retainFrom(lettersAndNumbers));
+    }
+
+    private static void StringsExec() {
+        StringBuilder builder = new StringBuilder("foo");
+        char c = 'x';
+        for (int i = 0; i < 3; i++) {
+            builder.append(c);
+        }
+        System.out.println(builder);
+        System.out.println(Strings.padEnd("foo", 6, 'x'));
+        for (int i = 0; i < 10000; i++) {
+            String str = Integer.toString(i);
+            System.out.println(Strings.padStart(str, 5, '0'));
+        }
+
+        System.out.println(Strings.repeat("0", 10));
+        System.out.println(Strings.isNullOrEmpty(null));
+        System.out.println(Strings.isNullOrEmpty(""));
+        System.out.println(Strings.isNullOrEmpty("isNullOrEmpty"));
+        System.out.println(Strings.nullToEmpty(null));
+        System.out.println(Strings.nullToEmpty(""));
+        System.out.println(Strings.nullToEmpty("nullToEmpty"));
+        System.out.println(Strings.emptyToNull(null));
+        System.out.println(Strings.emptyToNull(""));
+        System.out.println(Strings.emptyToNull("emptyToNull"));
+    }
+
+    private static void charsetsExec() {
+        System.out.println(Charsets.ISO_8859_1);
+        System.out.println(Charsets.US_ASCII);
+        System.out.println(Charsets.UTF_8);
+        System.out.println(Charsets.UTF_16);
+        System.out.println(Charsets.UTF_16BE);
+        System.out.println(Charsets.UTF_16LE);
+    }
+
+    private static void splitterExec() {
+        Splitter on = Splitter.on("#");
+        for (String str : on.trimResults().split("1 #2#3 #4")) {
+            System.out.println(str);
+        }
+
+        for (String str : on.split("1#   2#   3#")) {
+            System.out.println(str);
+        }
+
+        String startString = "Washington D.C=Redskins#New York City=Giants#Philadelphia=Eagles#Dallas=Cowboys";
+        Map<String, String> testMap = Maps.newLinkedHashMap();
+        testMap.put("Washington D.C", "Redskins");
+        testMap.put("New York City", "Giants");
+        testMap.put("Philadelphia", "Eagles");
+        testMap.put("Dallas", "Cowboys");
+        Map<String, String> splitMap = Splitter.on("#").withKeyValueSeparator("=").split(startString);
+        System.out.println(testMap);
+        System.out.println(splitMap);
+        Assert.assertThat(testMap, CoreMatchers.is(splitMap));
     }
 
     private static void joinerExec() {
