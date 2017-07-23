@@ -20,12 +20,11 @@ import java.util.Map;
  */
 public class TestGuava {
 
-
     public static void main(String[] args) {
 //        joinerExec();
 //        splitterExec();
 //        charsetsExec();
-//        StringsExec();
+//        stringsExec();
         charMatcherExec();
     }
 
@@ -43,7 +42,7 @@ public class TestGuava {
         System.out.println(CharMatcher.javaDigit().or(CharMatcher.whitespace()).retainFrom(lettersAndNumbers));
     }
 
-    private static void StringsExec() {
+    private static void stringsExec() {
         StringBuilder builder = new StringBuilder("foo");
         char c = 'x';
         for (int i = 0; i < 3; i++) {
