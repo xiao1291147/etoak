@@ -1,6 +1,7 @@
 package com.etoak.test;
 
 import com.google.common.base.*;
+import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -25,7 +26,61 @@ public class TestGuava {
 //        splitterExec();
 //        charsetsExec();
 //        stringsExec();
-        charMatcherExec();
+//        charMatcherExec();
+//        preconditionsExec();
+        objectsExec();
+    }
+
+    private static void objectsExec() {
+        Book book = new Book(new Person("name"), "title", "publisher", "isbn", 12.11);
+        System.out.println(book.equals(new Book(new Person("name"), "title", "publisher", "isbn", 12.1)));
+        System.out.println(book.hashCode());
+        System.out.println(book.compareTo(new Book(new Person("name"), "title", "publisher", "isbn", 12.1)));
+
+        System.out.println();
+
+        System.out.println(book.equals(new Book(new Person("name2"), "title", "publisher", "isbn", 12.11)));
+        System.out.println(book.hashCode());
+        System.out.println(book.compareTo(new Book(new Person("name2"), "title", "publisher", "isbn", 12.11)));
+
+        System.out.println();
+
+        System.out.println(book.equals(new Book(new Person("name"), "title", "publisher", "isbn", 12.11)));
+        System.out.println(book.hashCode());
+        System.out.println(book.compareTo(new Book(new Person("name"), "title", "publisher", "isbn", 12.11)));
+    }
+
+    private static void preconditionsExec() {
+        boolean condition = false;
+        try {
+            Preconditions.checkArgument(condition, "1", "2", "3");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            Preconditions.checkState(condition, "1", "2", "3");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        String str = null;
+        try {
+            Preconditions.checkNotNull(str, "1", "2", "3");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            Preconditions.checkElementIndex(2, 0);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            Preconditions.checkPositionIndexes(0, 2, 1);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private static void charMatcherExec() {
@@ -150,5 +205,101 @@ public class TestGuava {
         }
         builder.setLength(builder.length() - delimiter.length());
         System.out.println(builder);
+    }
+}
+
+class Person implements Comparable<Person> {
+    private String name;
+
+    public Person(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Person person = (Person) o;
+        return Objects.equal(name, person.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(name);
+    }
+
+    @Override
+    public int compareTo(Person o) {
+        return ComparisonChain.start()
+                .compare(this.name, o.getName())
+                .result();
+    }
+
+    public String getName() {
+        return name;
+    }
+}
+
+class Book implements Comparable<Book> {
+    private Person author;
+    private String title;
+    private String publisher;
+    private String isbn;
+    private double price;
+
+    public Book(Person author, String title, String publisher, String isbn, double price) {
+        this.author = author;
+        this.title = title;
+        this.publisher = publisher;
+        this.isbn = isbn;
+        this.price = price;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Book book = (Book) o;
+        return Double.compare(book.price, price) == 0 &&
+                Objects.equal(author, book.author) &&
+                Objects.equal(title, book.title) &&
+                Objects.equal(publisher, book.publisher) &&
+                Objects.equal(isbn, book.isbn);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(author, title, publisher, isbn, price);
+    }
+
+    @Override
+    public int compareTo(Book o) {
+        return ComparisonChain.start()
+                .compare(this.title, o.getTitle())
+                .compare(this.author, o.getAuthor())
+                .compare(this.publisher, o.getPublisher())
+                .compare(this.isbn, o.getIsbn())
+                .compare(this.price, o.getPrice())
+                .result();
+    }
+
+    public Person getAuthor() {
+        return author;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getPublisher() {
+        return publisher;
+    }
+
+    public String getIsbn() {
+        return isbn;
+    }
+
+    public double getPrice() {
+        return price;
     }
 }
