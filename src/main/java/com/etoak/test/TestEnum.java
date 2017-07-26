@@ -7,7 +7,7 @@ import java.util.*;
 import static com.etoak.test.TestEnum.Color.*;
 
 /**
- * TestEnum
+ * Effective Java
  * Created by xiao1 on 2017/7/23.
  */
 public class TestEnum {
