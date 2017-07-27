@@ -1,19 +1,22 @@
 package com.etoak.test;
 
+import com.etoak.po.Book;
+import com.etoak.po.Person;
 import com.google.common.base.*;
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import com.google.common.collect.*;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import static java.lang.System.out;
 
 /**
  * Getting Started with Google Guava
@@ -28,7 +31,50 @@ public class TestGuava {
 //        stringsExec();
 //        charMatcherExec();
 //        preconditionsExec();
-        objectsExec();
+//        objectsExec();
+//        functionExec();
+        fluentIterableExec();
+    }
+
+    private static void fluentIterableExec() {
+        Person person1 = new Person("Wilma", 30, "F");
+        Person person2 = new Person("Fred", 32, "M");
+        Person person3 = new Person("Betty", 31, "F");
+        Person person4 = new Person("Barney", 33, "M");
+        List<Person> personList = Lists.newArrayList(person1, person2, person3, person4);
+        Iterable<Person> personsFilteredByAge = FluentIterable.from(personList).filter(new Predicate<Person>() {
+            @Override
+            public boolean apply(Person input) {
+                return input.getAge() > 31;
+            }
+        });
+
+        Assert.assertThat(Iterables.contains(personsFilteredByAge, person2), CoreMatchers.is(true));
+        Assert.assertThat(Iterables.contains(personsFilteredByAge, person4), CoreMatchers.is(true));
+        Assert.assertThat(Iterables.contains(personsFilteredByAge, person1), CoreMatchers.is(false));
+        Assert.assertThat(Iterables.contains(personsFilteredByAge, person3), CoreMatchers.is(false));
+        personsFilteredByAge.forEach(out::println);
+
+
+        List<String> transformedPersonList = FluentIterable.from(personList).transform(new Function<Person, String>() {
+            @Override
+            public String apply(Person input) {
+                return Joiner.on('#').join(input.getName(), input.getAge());
+            }
+        }).toList();
+
+        Assert.assertThat(transformedPersonList.get(1), CoreMatchers.is("Fred#32"));
+        transformedPersonList.forEach(out::println);
+    }
+
+    private static void functionExec() {
+        Function<Date, String> function = new Function<Date, String>() {
+            @Override
+            public String apply(Date input) {
+                return new SimpleDateFormat("dd/mm/yyyy").format(input);
+            }
+        };
+        System.out.println(function.apply(new Date()));
     }
 
     private static void objectsExec() {
@@ -208,98 +254,3 @@ public class TestGuava {
     }
 }
 
-class Person implements Comparable<Person> {
-    private String name;
-
-    public Person(String name) {
-        this.name = name;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Person person = (Person) o;
-        return Objects.equal(name, person.name);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(name);
-    }
-
-    @Override
-    public int compareTo(Person o) {
-        return ComparisonChain.start()
-                .compare(this.name, o.getName())
-                .result();
-    }
-
-    public String getName() {
-        return name;
-    }
-}
-
-class Book implements Comparable<Book> {
-    private Person author;
-    private String title;
-    private String publisher;
-    private String isbn;
-    private double price;
-
-    public Book(Person author, String title, String publisher, String isbn, double price) {
-        this.author = author;
-        this.title = title;
-        this.publisher = publisher;
-        this.isbn = isbn;
-        this.price = price;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Book book = (Book) o;
-        return Double.compare(book.price, price) == 0 &&
-                Objects.equal(author, book.author) &&
-                Objects.equal(title, book.title) &&
-                Objects.equal(publisher, book.publisher) &&
-                Objects.equal(isbn, book.isbn);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(author, title, publisher, isbn, price);
-    }
-
-    @Override
-    public int compareTo(Book o) {
-        return ComparisonChain.start()
-                .compare(this.title, o.getTitle())
-                .compare(this.author, o.getAuthor())
-                .compare(this.publisher, o.getPublisher())
-                .compare(this.isbn, o.getIsbn())
-                .compare(this.price, o.getPrice())
-                .result();
-    }
-
-    public Person getAuthor() {
-        return author;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getPublisher() {
-        return publisher;
-    }
-
-    public String getIsbn() {
-        return isbn;
-    }
-
-    public double getPrice() {
-        return price;
-    }
-}
