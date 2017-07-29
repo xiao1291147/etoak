@@ -14,6 +14,10 @@ public class Book implements Comparable<Book> {
     private String isbn;
     private double price;
 
+    public Book(String isbn) {
+        this.isbn = isbn;
+    }
+
     public Book(Person author, String title, String publisher, String isbn, double price) {
         this.author = author;
         this.title = title;
@@ -37,6 +41,18 @@ public class Book implements Comparable<Book> {
     @Override
     public int hashCode() {
         return Objects.hashCode(author, title, publisher, isbn, price);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder builder = new StringBuilder("Book{");
+        builder.append("author=").append(author);
+        builder.append(", title='").append(title).append('\'');
+        builder.append(", publisher='").append(publisher).append('\'');
+        builder.append(", isbn='").append(isbn).append('\'');
+        builder.append(", price=").append(price);
+        builder.append('}');
+        return builder.toString();
     }
 
     @Override
@@ -68,5 +84,25 @@ public class Book implements Comparable<Book> {
 
     public double getPrice() {
         return price;
+    }
+
+    public void setAuthor(Person author) {
+        this.author = author;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setPublisher(String publisher) {
+        this.publisher = publisher;
+    }
+
+    public void setIsbn(String isbn) {
+        this.isbn = isbn;
+    }
+
+    public void setPrice(double price) {
+        this.price = price;
     }
 }
