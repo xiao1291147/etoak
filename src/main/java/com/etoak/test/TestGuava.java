@@ -4,15 +4,19 @@ import com.etoak.po.Book;
 import com.etoak.po.Person;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import com.google.common.primitives.Ints;
+import com.google.common.util.concurrent.*;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static java.lang.System.out;
 
@@ -35,9 +39,204 @@ public class TestGuava {
 //        listsExec();
 //        setsExec();
 //        mapsExec();
-//        multimapsExec();
+//        multimapExec();
 //        biMapExec();
-        tableExec();
+//        tableExec();
+//        rangeExec();
+//        immutableExec();
+//        orderingExec();
+//        monitorExec();
+//        listenableFutureExec();
+        futureCallbackExec();
+    }
+
+    static class FutureCallbackImpl implements FutureCallback<String> {
+        private StringBuilder builder = new StringBuilder("---");
+
+        @Override
+        public void onSuccess(String result) {
+            builder.append(result).append(" successfully");
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+            builder.append(t.toString());
+        }
+
+        private String getCallbackResult() {
+            return builder.toString();
+        }
+    }
+
+    /**
+     * TODO note
+     */
+    private static void futureCallbackExec() {
+        ListeningExecutorService executorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(3));
+        ListenableFuture<String> listenableFuture = executorService.submit(() -> {
+            TimeUnit.SECONDS.sleep(1);
+            return "Task completed";
+        });
+        FutureCallbackImpl futureCallback = new FutureCallbackImpl();
+        Futures.addCallback(listenableFuture, futureCallback, executorService);
+        System.out.println(futureCallback.getCallbackResult());
+
+        try {
+            TimeUnit.SECONDS.sleep(3);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        executorService.shutdown();
+    }
+
+    private static void listenableFutureExec() {
+        ListeningExecutorService executorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(3));
+        ListenableFuture<String> listenableFuture = executorService.submit(() -> {
+            try {
+                TimeUnit.SECONDS.sleep(3);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return "finish";
+        });
+
+        listenableFuture.addListener(() -> {
+            try {
+                System.out.println("submit---" + listenableFuture.get());
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        }, executorService);
+    }
+
+    private static final int MAX_SIZE = 10;
+    private List<String> list = new ArrayList<>();
+    private Monitor monitor = new Monitor();
+    private Monitor.Guard listBelowCapacity = new Monitor.Guard(monitor) {
+        @Override
+        public boolean isSatisfied() {
+            return list.size() < MAX_SIZE;
+        }
+    };
+
+    private void addToList(String item) throws InterruptedException {
+        monitor.enterWhen(listBelowCapacity);
+        try {
+            list.add(item);
+            System.out.println("添加元素[" + item + "]成功, 当前size=" + list.size());
+        } finally {
+            monitor.leave();
+        }
+    }
+
+    private void addToListSkipWait(String item) throws InterruptedException {
+        boolean ok = monitor.tryEnterIf(listBelowCapacity);
+        System.out.println("Thread[" + Thread.currentThread().getName() + "] item=" + item + ", 获取令牌：ok=" + ok);
+        if (!ok) {
+            return;
+        }
+
+        try {
+            list.add(item);
+            System.out.println("添加元素[" + item + "]成功, 当前size=" + list.size());
+        } finally {
+            monitor.leave();
+        }
+    }
+
+    private static void monitorExec() {
+        final TestGuava testGuava = new TestGuava();
+        for (int i = 0; i < 5; i++) {
+            new Thread(() -> {
+                for (int j = 0; j < 6; j++) {
+                    try {
+//                        testGuava.addToList(j + "--->" + Thread.currentThread().getName());
+                        testGuava.addToListSkipWait(j + "--->" + Thread.currentThread().getName());
+                        TimeUnit.MILLISECONDS.sleep(100L);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+            }).start();
+        }
+
+        try {
+            TimeUnit.SECONDS.sleep(3);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("-------------------");
+
+        testGuava.list.forEach(out::println);
+    }
+
+    private static void orderingExec() {
+        Person person = new Person("Moss", 28, "M");
+        Person person1 = new Person("Jen", 24, "F");
+        Person person2 = new Person("Roy", 26, "M");
+        List<Person> personList = Lists.newArrayList(person, person1, person2);
+
+        Function<Person, Comparable> ageFunction = new Function<Person, Comparable>() {
+            @Override
+            public Comparable apply(Person input) {
+                return input.getAge();
+            }
+        };
+        System.out.println("natural");
+        Ordering.natural().onResultOf(ageFunction).sortedCopy(personList).forEach(out::println);
+        System.out.println("-------------");
+        Ordering.natural().onResultOf(ageFunction).reverse().sortedCopy(personList).forEach(out::println);
+        System.out.println();
+
+        System.out.println("usingToString");
+        Ordering.usingToString().sortedCopy(personList).forEach(out::println);
+        System.out.println("-------------");
+        Ordering.usingToString().reverse().sortedCopy(personList).forEach(out::println);
+        System.out.println();
+
+        Comparator<Person> personComparator = new Comparator<Person>() {
+            @Override
+            public int compare(Person o1, Person o2) {
+                return Ints.compare(o1.getAge(), o2.getAge());
+            }
+        };
+        System.out.println("from");
+        Ordering.from(personComparator).greatestOf(personList, 1).forEach(out::println);
+        System.out.println("-------------");
+        Ordering.from(personComparator).leastOf(personList, 1).forEach(out::println);
+    }
+
+    private static void immutableExec() {
+        ImmutableListMultimap<Object, Object> immutableListMultimap = ImmutableListMultimap.builder()
+                .put(1, "Foo").putAll(2, "Foo", "Bar", "Baz").putAll(4, "Huey", "Duey", "Luey").put(3, "Single").build();
+        System.out.println(immutableListMultimap);
+    }
+
+    private static void rangeExec() {
+        System.out.println("closed:" + Range.closed(1, 10));
+        System.out.println("open:" + Range.open(1, 10));
+        System.out.println("openClosed:" + Range.openClosed(1, 10));
+        System.out.println("closedOpen:" + Range.closedOpen(1, 10));
+        System.out.println("range:" + Range.range(1, BoundType.CLOSED, 10, BoundType.CLOSED));
+        System.out.println("all:" + Range.all());
+        System.out.println("atLeast:" + Range.atLeast(1));
+        System.out.println("atMost:" + Range.atMost(10));
+        System.out.println("greaterThan:" + Range.greaterThan(1));
+        System.out.println("lessThan:" + Range.lessThan(10));
+        System.out.println("downTo:" + Range.downTo(10, BoundType.OPEN));
+        System.out.println("upTo:" + Range.upTo(1, BoundType.OPEN));
+        System.out.println("singleton:" + Range.singleton(1));
+        System.out.println("encloseAll:" + Range.encloseAll(ImmutableList.of(10, 1)));
+        System.out.println();
+
+        FluentIterable.from(ImmutableList.of(new Person("Moss", 28, "M"), new Person("Jen", 30, "F")))
+                .filter(Predicates.compose(Range.closed(30, 50), new Function<Person, Integer>() {
+                    @Override
+                    public Integer apply(Person input) {
+                        return input.getAge();
+                    }
+                })).forEach(out::println);
     }
 
     private static void tableExec() {
@@ -144,7 +343,7 @@ public class TestGuava {
         System.out.println(inverse);
     }
 
-    private static void multimapsExec() {
+    private static void multimapExec() {
         ArrayListMultimap<String, String> arrayListMultimap = ArrayListMultimap.create();
         arrayListMultimap.put("Foo", "1");
         arrayListMultimap.put("Foo", "2");
