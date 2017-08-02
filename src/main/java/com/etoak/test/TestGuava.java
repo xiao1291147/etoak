@@ -5,19 +5,17 @@ import com.etoak.po.Person;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.*;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.concurrent.*;
 
+import static com.etoak.util.Utils.cutUp;
 import static java.lang.System.out;
 
 /**
@@ -45,130 +43,7 @@ public class TestGuava {
 //        rangeExec();
 //        immutableExec();
 //        orderingExec();
-//        monitorExec();
-//        listenableFutureExec();
-        futureCallbackExec();
-    }
 
-    static class FutureCallbackImpl implements FutureCallback<String> {
-        private StringBuilder builder = new StringBuilder("---");
-
-        @Override
-        public void onSuccess(String result) {
-            builder.append(result).append(" successfully");
-        }
-
-        @Override
-        public void onFailure(Throwable t) {
-            builder.append(t.toString());
-        }
-
-        private String getCallbackResult() {
-            return builder.toString();
-        }
-    }
-
-    /**
-     * TODO note
-     */
-    private static void futureCallbackExec() {
-        ListeningExecutorService executorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(3));
-        ListenableFuture<String> listenableFuture = executorService.submit(() -> {
-            TimeUnit.SECONDS.sleep(1);
-            return "Task completed";
-        });
-        FutureCallbackImpl futureCallback = new FutureCallbackImpl();
-        Futures.addCallback(listenableFuture, futureCallback, executorService);
-        System.out.println(futureCallback.getCallbackResult());
-
-        try {
-            TimeUnit.SECONDS.sleep(3);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        executorService.shutdown();
-    }
-
-    private static void listenableFutureExec() {
-        ListeningExecutorService executorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(3));
-        ListenableFuture<String> listenableFuture = executorService.submit(() -> {
-            try {
-                TimeUnit.SECONDS.sleep(3);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            return "finish";
-        });
-
-        listenableFuture.addListener(() -> {
-            try {
-                System.out.println("submit---" + listenableFuture.get());
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
-        }, executorService);
-    }
-
-    private static final int MAX_SIZE = 10;
-    private List<String> list = new ArrayList<>();
-    private Monitor monitor = new Monitor();
-    private Monitor.Guard listBelowCapacity = new Monitor.Guard(monitor) {
-        @Override
-        public boolean isSatisfied() {
-            return list.size() < MAX_SIZE;
-        }
-    };
-
-    private void addToList(String item) throws InterruptedException {
-        monitor.enterWhen(listBelowCapacity);
-        try {
-            list.add(item);
-            System.out.println("添加元素[" + item + "]成功, 当前size=" + list.size());
-        } finally {
-            monitor.leave();
-        }
-    }
-
-    private void addToListSkipWait(String item) throws InterruptedException {
-        boolean ok = monitor.tryEnterIf(listBelowCapacity);
-        System.out.println("Thread[" + Thread.currentThread().getName() + "] item=" + item + ", 获取令牌：ok=" + ok);
-        if (!ok) {
-            return;
-        }
-
-        try {
-            list.add(item);
-            System.out.println("添加元素[" + item + "]成功, 当前size=" + list.size());
-        } finally {
-            monitor.leave();
-        }
-    }
-
-    private static void monitorExec() {
-        final TestGuava testGuava = new TestGuava();
-        for (int i = 0; i < 5; i++) {
-            new Thread(() -> {
-                for (int j = 0; j < 6; j++) {
-                    try {
-//                        testGuava.addToList(j + "--->" + Thread.currentThread().getName());
-                        testGuava.addToListSkipWait(j + "--->" + Thread.currentThread().getName());
-                        TimeUnit.MILLISECONDS.sleep(100L);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-                }
-            }).start();
-        }
-
-        try {
-            TimeUnit.SECONDS.sleep(3);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        System.out.println("-------------------");
-
-        testGuava.list.forEach(out::println);
     }
 
     private static void orderingExec() {
@@ -185,13 +60,13 @@ public class TestGuava {
         };
         System.out.println("natural");
         Ordering.natural().onResultOf(ageFunction).sortedCopy(personList).forEach(out::println);
-        System.out.println("-------------");
+        cutUp();
         Ordering.natural().onResultOf(ageFunction).reverse().sortedCopy(personList).forEach(out::println);
         System.out.println();
 
         System.out.println("usingToString");
         Ordering.usingToString().sortedCopy(personList).forEach(out::println);
-        System.out.println("-------------");
+        cutUp();
         Ordering.usingToString().reverse().sortedCopy(personList).forEach(out::println);
         System.out.println();
 
@@ -203,7 +78,7 @@ public class TestGuava {
         };
         System.out.println("from");
         Ordering.from(personComparator).greatestOf(personList, 1).forEach(out::println);
-        System.out.println("-------------");
+        cutUp();
         Ordering.from(personComparator).leastOf(personList, 1).forEach(out::println);
     }
 
