@@ -2,20 +2,72 @@ package com.etoak.test;
 
 import com.etoak.po.Book;
 import com.etoak.po.Person;
-import com.google.common.base.*;
-import com.google.common.collect.*;
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Charsets;
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ArrayTable;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.BoundType;
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.HashBiMap;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.ImmutableTable;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
+import com.google.common.collect.Range;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Table;
+import com.google.common.collect.TreeMultimap;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.Hashing;
+import com.google.common.io.ByteSink;
+import com.google.common.io.ByteSource;
+import com.google.common.io.ByteStreams;
+import com.google.common.io.FileWriteMode;
+import com.google.common.io.Files;
+import com.google.common.io.LineProcessor;
 import com.google.common.primitives.Ints;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static com.etoak.util.Utils.cutUp;
+import static com.etoak.util.Utils.sleep;
 import static java.lang.System.out;
 
 /**
@@ -43,7 +95,169 @@ public class TestGuava {
 //        rangeExec();
 //        immutableExec();
 //        orderingExec();
+        filesExec();
+    }
 
+    private static void filesExec() {
+//        copyAndMove();
+//        readAndHash();
+//        writeAndAppend();
+//        sourceAndSink();
+        byteStreamsAndCharStreams();
+    }
+
+    private static void byteStreamsAndCharStreams() {
+        File binaryFile = new File("D://file/sample.pdf");
+        try {
+            BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(binaryFile));
+            InputStream limitedInputStream = ByteStreams.limit(inputStream, 10);
+            Assert.assertThat(limitedInputStream.available(), CoreMatchers.is(10));
+            Assert.assertThat(inputStream.available(), CoreMatchers.is(11));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        File f1 = new File("D://file/sampleTextFileOne.txt");
+        File f2 = new File("D://file/sampleTextFileTwo.txt");
+        File f3 = new File("D://file/lines.txt");
+        File joinedOutput = new File("D://file/joined.txt");
+        joinedOutput.deleteOnExit();
+//        List<InputSupplier<InputStreamReader>> inputSuppliers() = getInputSuppliers() (f1, f2, f3);
+
+    }
+
+    private static void sourceAndSink() {
+        File f1 = new File("D://file/sample.pdf");
+        ByteSource byteSource = Files.asByteSource(f1);
+        try {
+            byte[] readBytes = byteSource.read();
+            Assert.assertThat(readBytes, CoreMatchers.is(Files.toByteArray(f1)));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        File dest = new File("D://file/byteSink.pdf");
+        dest.deleteOnExit();
+        ByteSink byteSink = Files.asByteSink(dest);
+        File f2 = new File("D://file/sample.pdf");
+        try {
+            byteSink.write(Files.toByteArray(f2));
+            Assert.assertThat(Files.toByteArray(dest), CoreMatchers.is(Files.toByteArray(f2)));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        File copyDest = new File("D://file/sampleCompany.pdf");
+        copyDest.deleteOnExit();
+        File source = new File("D://file/sample.pdf");
+        ByteSource copyByteSource = Files.asByteSource(source);
+        ByteSink copyByteSink = Files.asByteSink(copyDest);
+        try {
+            copyByteSource.copyTo(copyByteSink);
+            Assert.assertThat(Files.toByteArray(copyDest), CoreMatchers.is(Files.toByteArray(source)));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void writeAndAppend() {
+        // Writing and appending
+        File writeFile = new File("D://file/quote.txt");
+        writeFile.deleteOnExit();
+        String hamletQuoteStart = "To be, or not to be";
+        try {
+            Files.asCharSink(writeFile, Charsets.UTF_8).write(hamletQuoteStart);
+            Assert.assertThat(Files.asCharSource(writeFile, Charsets.UTF_8).read(), CoreMatchers.is(hamletQuoteStart));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        sleep(5000L);
+        String hamletQuoteEnd = ", that is the question";
+        try {
+            Files.asCharSink(writeFile, Charsets.UTF_8, FileWriteMode.APPEND).write(hamletQuoteEnd);
+            Assert.assertThat(Files.asCharSource(writeFile, Charsets.UTF_8).read(), CoreMatchers.is(hamletQuoteStart + hamletQuoteEnd));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        sleep(5000L);
+        String overwrite = "Overwriting the file";
+        try {
+            Files.asCharSink(writeFile, Charsets.UTF_8).write(overwrite);
+            Assert.assertThat(Files.asCharSource(writeFile, Charsets.UTF_8).read(), CoreMatchers.is(overwrite));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        sleep(5000L);
+    }
+
+    static class ToListLineProcessor implements LineProcessor<List<String>> {
+        private static final Splitter splitter = Splitter.on(",");
+        private List<String> bookTitles = Lists.newArrayList();
+        private static final int TITLE_INDEX = 1;
+
+        @Override
+        public boolean processLine(String line) throws IOException {
+            bookTitles.add(Iterables.get(splitter.split(line), TITLE_INDEX));
+            return true;
+        }
+
+        @Override
+        public List<String> getResult() {
+            return bookTitles;
+        }
+    }
+
+    private static void readAndHash() {
+        // read Files to String
+        File readOriginal = new File("D://file/lines");
+        List<String> expectedLines = Lists.newArrayList("The quick brown", "fox jumps over", "the lazy dog");
+        try {
+            List<String> readLines = Files.readLines(readOriginal, Charsets.UTF_8);
+            Assert.assertThat(expectedLines, CoreMatchers.is(readLines));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // lineProcessor
+        File lineProcessorFile = new File("D://file/books.csv");
+        List<String> processorExpectedLines = Lists.newArrayList("Being A Great Cook", "Art is Fun", "Be an Architect", "History of Football", "Gardening My Way");
+        try {
+            List<String> processtorReadLines = Files.asCharSource(lineProcessorFile, Charsets.UTF_8).readLines(new ToListLineProcessor());
+            Assert.assertThat(processorExpectedLines, CoreMatchers.is(processtorReadLines));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Hashing a file
+        File hashFile = new File("D://file/sampleTextFileOne");
+        try {
+            HashCode hashCode = Files.asByteSource(hashFile).hash(Hashing.sha256());
+            System.out.println(hashCode);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void copyAndMove() {
+        // copy
+        File copyOriginal = new File("D://file/original");
+        File copy = new File("D://file/copy");
+        try {
+            Files.copy(copyOriginal, copy);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        sleep(5000L);
+
+        // move
+        File moveOriginal = new File("D://file/copy");
+        File newFile = new File("D://file/newFile");
+        try {
+            Files.move(moveOriginal, newFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void orderingExec() {
