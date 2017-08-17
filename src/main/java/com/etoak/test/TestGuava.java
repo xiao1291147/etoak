@@ -6,11 +6,14 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ArrayTable;
 import com.google.common.collect.BiMap;
@@ -37,9 +40,12 @@ import com.google.common.collect.Table;
 import com.google.common.collect.TreeMultimap;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
+import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteSink;
 import com.google.common.io.ByteSource;
 import com.google.common.io.ByteStreams;
+import com.google.common.io.CharSink;
+import com.google.common.io.Closer;
 import com.google.common.io.FileWriteMode;
 import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
@@ -48,12 +54,15 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -65,6 +74,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.regex.Pattern;
 
 import static com.etoak.util.Utils.cutUp;
 import static com.etoak.util.Utils.sleep;
@@ -95,15 +110,119 @@ public class TestGuava {
 //        rangeExec();
 //        immutableExec();
 //        orderingExec();
-        filesExec();
+//        filesExec();
+//        optionalExec();
+        throwablesExec();
+
     }
+
+    private static void throwablesExec() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        List<Throwable> throwables = null;
+        Callable<FileInputStream> fileCallable = () -> new FileInputStream("Bogus file");
+        Future<FileInputStream> fisFuture = executor.submit(fileCallable);
+        try {
+            fisFuture.get();
+        } catch (Exception e) {
+            throwables = Throwables.getCausalChain(e);
+        }
+        System.out.println(throwables);
+        Assert.assertThat(throwables.get(0).getClass().isAssignableFrom(ExecutionException.class), CoreMatchers.is(true));
+        Assert.assertThat(throwables.get(1).getClass().isAssignableFrom(FileNotFoundException.class), CoreMatchers.is(true));
+
+        Throwable cause = null;
+        String stackTraceAsString = null;
+        final String nullString = null;
+        Callable<String> stringCallable = () -> nullString.substring(0, 2);
+        Future<String> stringFuture = executor.submit(stringCallable);
+        try {
+            stringFuture.get();
+        } catch (Exception e) {
+            cause = Throwables.getRootCause(e);
+            stackTraceAsString = Throwables.getStackTraceAsString(e);
+        }
+        System.out.println(cause);
+        System.out.println(stackTraceAsString);
+        Assert.assertThat(cause.getClass().isAssignableFrom(NullPointerException.class), CoreMatchers.is(true));
+
+        executor.shutdownNow();
+    }
+
+    private static void optionalExec() {
+        Object nullObj = null;
+        String nullStr = "Null";
+        System.out.println(Optional.fromNullable(nullObj).or(nullStr));
+        System.out.println(MoreObjects.firstNonNull(nullObj, nullStr));
+        try {
+            System.out.println(MoreObjects.firstNonNull(nullObj, nullObj));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 
     private static void filesExec() {
 //        copyAndMove();
 //        readAndHash();
 //        writeAndAppend();
 //        sourceAndSink();
-        byteStreamsAndCharStreams();
+//        byteStreamsAndCharStreams();
+//        closerExec();
+        baseEncodingExec();
+    }
+
+    private static void baseEncodingExec() {
+        File file = new File("D://file/sample.pdf");
+        try {
+            byte[] bytes = Files.toByteArray(file);
+            BaseEncoding baseEncoding = BaseEncoding.base64();
+            String encode = baseEncoding.encode(bytes);
+            System.out.println(encode);
+            Assert.assertThat(Pattern.matches("[A-Za-z0-9+/=]+", encode), CoreMatchers.is(true));
+            Assert.assertThat(baseEncoding.decode(encode), CoreMatchers.is(bytes));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        File encodedFile = new File("D://file/encoded");
+        encodedFile.deleteOnExit();
+        CharSink charSink = Files.asCharSink(encodedFile, Charsets.UTF_8);
+        BaseEncoding baseEncoding = BaseEncoding.base64();
+        ByteSink byteSink = baseEncoding.encodingSink(charSink);
+        ByteSource byteSource = Files.asByteSource(file);
+        try {
+            byteSource.copyTo(byteSink);
+            String encodedBytes = baseEncoding.encode(byteSource.read());
+            System.out.println(encodedBytes);
+            Assert.assertThat(encodedBytes, CoreMatchers.is(Files.asCharSource(encodedFile, Charsets.UTF_8).read()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void closerExec() {
+        Closer closer = Closer.create();
+        try {
+            File destination = new File("D://file/copy");
+            destination.deleteOnExit();
+            BufferedReader reader = new BufferedReader(new FileReader("D://file/sampleTextFileOne"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(destination));
+            closer.register(reader);
+            closer.register(writer);
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                writer.write(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                closer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private static void byteStreamsAndCharStreams() {
@@ -116,14 +235,6 @@ public class TestGuava {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        File f1 = new File("D://file/sampleTextFileOne.txt");
-        File f2 = new File("D://file/sampleTextFileTwo.txt");
-        File f3 = new File("D://file/lines.txt");
-        File joinedOutput = new File("D://file/joined.txt");
-        joinedOutput.deleteOnExit();
-//        List<InputSupplier<InputStreamReader>> inputSuppliers() = getInputSuppliers() (f1, f2, f3);
-
     }
 
     private static void sourceAndSink() {
