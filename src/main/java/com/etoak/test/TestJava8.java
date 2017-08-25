@@ -1,52 +1,53 @@
 package com.etoak.test;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
+import com.google.common.collect.Lists;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import static com.etoak.util.Utils.cutUp;
 
 /**
- * 写给大忙人看的javase8
+ * TestJava8
  * Created by xiao1 on 2017/8/21.
  */
 public class TestJava8 {
 
     public static void main(String[] args) {
-        System.out.println(Comparator.comparingInt(String::length).compare("first", "second"));
-        new Thread(new FutureTask<Void>(() -> {
-            System.out.println("callable");
-            return null;
-        })).start();
+        generateStream();
+    }
 
-        List<Runnable> runners = new ArrayList<>();
-        String[] names = {"Moss", "Roy", "Jen"};
-        for (String name : names) {
-            runners.add(() -> System.out.println(name));
+    private static void generateStream() {
+        System.out.println("从Collection获取Stream");
+        Collection<String> collection = Lists.newArrayList("1", "2", "3", "4", "5");
+        System.out.println(collection.stream().collect(Collectors.joining()));
+        System.out.println(collection.parallelStream().collect(Collectors.joining()));
+
+        cutUp();
+
+        System.out.println("从数组获取Stream");
+        String[] array = collection.toArray(new String[collection.size()]);
+        System.out.println(Arrays.stream(array).collect(Collectors.joining()));
+        System.out.println(Stream.of(array).collect(Collectors.joining()));
+
+        cutUp();
+
+        System.out.println("从BufferedReader获取Stream");
+        try (Stream<String> lines = Files.newBufferedReader(Paths.get("D://file/date.txt")).lines()) {
+            System.out.println(lines.collect(Collectors.joining()));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        for (int i = 0; i < names.length; i++) {
-            String name = names[i];
-            runners.add(uncheck(() -> {
-                TimeUnit.SECONDS.sleep(1);
-                System.out.println(name);
-            }));
-        }
 
-        runners.forEach(runner -> new Thread(runner).start());
+        cutUp();
+
+        System.out.println("从静态工厂获取Stream");
+        System.out.println(IntStream.rangeClosed(1, 5).mapToObj(String::valueOf).collect(Collectors.joining()));
     }
-
-    public static Runnable uncheck(RunnableEx runnableEx) {
-        return () -> {
-            try {
-                runnableEx.run();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        };
-    }
-
-    interface RunnableEx {
-        void run() throws Exception;
-    }
-
 }
