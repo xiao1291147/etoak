@@ -81,7 +81,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
-import static com.etoak.util.Utils.cutUp;
+import static com.etoak.util.Utils.separator;
 import static com.etoak.util.Utils.sleep;
 import static java.lang.System.out;
 
@@ -385,13 +385,13 @@ public class TestGuava {
         };
         System.out.println("natural");
         Ordering.natural().onResultOf(ageFunction).sortedCopy(personList).forEach(out::println);
-        cutUp();
+        separator();
         Ordering.natural().onResultOf(ageFunction).reverse().sortedCopy(personList).forEach(out::println);
         System.out.println();
 
         System.out.println("usingToString");
         Ordering.usingToString().sortedCopy(personList).forEach(out::println);
-        cutUp();
+        separator();
         Ordering.usingToString().reverse().sortedCopy(personList).forEach(out::println);
         System.out.println();
 
@@ -403,7 +403,7 @@ public class TestGuava {
         };
         System.out.println("from");
         Ordering.from(personComparator).greatestOf(personList, 1).forEach(out::println);
-        cutUp();
+        separator();
         Ordering.from(personComparator).leastOf(personList, 1).forEach(out::println);
     }
 

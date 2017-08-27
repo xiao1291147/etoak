@@ -1,18 +1,24 @@
 package com.etoak.test;
 
-import com.google.common.util.concurrent.*;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.Monitor;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
-import static com.etoak.util.Utils.cutUp;
+import static com.etoak.util.Utils.separator;
 import static com.etoak.util.Utils.sleep;
 import static java.lang.System.out;
 
 /**
- * TODO don't understand
+ * Note: don't understand
  * Getting Started with Google Guava
  * Created by xiao1 on 2017/8/3.
  */
@@ -149,7 +155,7 @@ public class TestGuavaConcurrency {
         }
 
         sleep(3000);
-        cutUp();
+        separator();
 
         testGuava.list.forEach(out::println);
     }

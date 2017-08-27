@@ -19,6 +19,11 @@ public class Person implements Comparable<Person> {
         this.name = name;
     }
 
+    public Person(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
     public Person(String name, int age, String sex) {
         this.name = name;
         this.age = age;
@@ -77,5 +82,20 @@ public class Person implements Comparable<Person> {
 
     public void setSex(String sex) {
         this.sex = sex;
+    }
+
+    public enum Sex {
+        MALE("M"),
+        FEMAL("F");
+
+        private String sex;
+
+        Sex(String sex) {
+            this.sex = sex;
+        }
+
+        public String getSex() {
+            return sex;
+        }
     }
 }

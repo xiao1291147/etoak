@@ -3,7 +3,7 @@ package com.etoak.util;
 import java.util.concurrent.TimeUnit;
 
 /**
- * TODO
+ * Utils
  * Created by xiao1 on 2017/8/2.
  */
 public class Utils {
@@ -17,7 +17,7 @@ public class Utils {
     }
 
 
-    public static void cutUp() {
+    public static void separator() {
         System.out.println("----------------------------");
         System.out.println("****************************");
         System.out.println("----------------------------");
