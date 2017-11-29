@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration debug="false">
+<!--
+    debug=true：打印logback内部状态, 代码中使用StatusPrinter.print方法
+    scan=true：配置文件修改后自动重新加载，默认1分钟扫描一次，configuration元素的scanPeriod属性控制扫描周期，默认毫秒
+        时间单位包括： milliseconds、 seconds、 minutes 和 hours
+        <configuration scan="true" scanPeriod="30 seconds">
+
+-->
+<configuration debug="false" scan="true">
     <!-- 控制台输出 -->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
