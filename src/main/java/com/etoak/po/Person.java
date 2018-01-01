@@ -4,7 +4,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ComparisonChain;
 
 /**
- * TODO
+ * Person
  * Created by xiao1 on 2017/7/27.
  */
 public class Person implements Comparable<Person> {
