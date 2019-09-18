@@ -8,7 +8,7 @@ import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
 
 /**
- * base64
+ * base64算法
  *
  * @author xiaol
  * @date 2019/9/17
